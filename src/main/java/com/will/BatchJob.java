@@ -18,12 +18,15 @@
 
 package com.will;
 
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.util.Collector;
+
+import java.util.regex.Pattern;
 
 /**
  * Skeleton for a Flink Batch Job.
@@ -40,6 +43,7 @@ public class BatchJob {
 	public static void main(String[] args) throws Exception {
 		// set up the batch execution environment
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+		final Pattern pattern= Pattern.compile("\\d+.*\\d*");
 
 
 		DataSet<String> input = env.readTextFile("/home/will/tmpdir/input.txt")
@@ -48,37 +52,23 @@ public class BatchJob {
 		DataSet<Tuple2<String,Integer>> out = input.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
 			@Override
 			public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
-				String[] ss = s.split("[,:\\s+]");
+				String[] ss = s.split("[,:\\s+()]");
 				for(String in: ss){
 					collector.collect(new Tuple2<>(in,1));
 				}
 			}
 		});
 
-		out.groupBy(0).sum(1).print();
-		/*
-		 * Here, you can start creating your execution plan for Flink.
-		 *
-		 * Start with getting some data from the environment, like
-		 * 	env.readTextFile(textPath);
-		 *
-		 * then, transform the resulting DataSet<String> using operations
-		 * like
-		 * 	.filter()
-		 * 	.flatMap()
-		 * 	.join()
-		 * 	.coGroup()
-		 *
-		 * and many more.
-		 * Have a look at the programming guide for the Java API:
-		 *
-		 * http://flink.apache.org/docs/latest/apis/batch/index.html
-		 *
-		 * and the examples
-		 *
-		 * http://flink.apache.org/docs/latest/apis/batch/examples.html
-		 *
-		 */
+		out.groupBy(0)
+			.sum(1)
+			.filter(new FilterFunction<Tuple2<String, Integer>>() {
+				@Override
+				public boolean filter(Tuple2<String, Integer> stringIntegerTuple2) throws Exception {
+					return pattern.matcher(stringIntegerTuple2.getField(0)).matches()
+							||stringIntegerTuple2.getField(0).toString().length()<1?false:true;
+				}
+			})
+			.print();
 
 		// execute program
 //		env.execute("Flink Batch Java API Skeleton");
