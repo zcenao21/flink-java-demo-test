@@ -48,6 +48,7 @@ public class StreamingJob {
 				.sum(1)
 				.name("Process-Word-Count");
 
+		proc.print();
 		proc.addSink(new WordCountSink())
 				.name("Word-Count-Sink");
 

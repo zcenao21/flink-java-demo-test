@@ -18,7 +18,12 @@
 
 package com.will;
 
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.util.Collector;
 
 /**
  * Skeleton for a Flink Batch Job.
@@ -37,6 +42,20 @@ public class BatchJob {
 		final ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
 
+		DataSet<String> input = env.readTextFile("/home/will/tmpdir/input.txt")
+				.name("Word Count Reading From File");
+		
+		DataSet<Tuple2<String,Integer>> out = input.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
+			@Override
+			public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
+				String[] ss = s.split("[,:\\s+]");
+				for(String in: ss){
+					collector.collect(new Tuple2<>(in,1));
+				}
+			}
+		});
+
+		out.groupBy(0).sum(1).print();
 		/*
 		 * Here, you can start creating your execution plan for Flink.
 		 *
@@ -62,6 +81,6 @@ public class BatchJob {
 		 */
 
 		// execute program
-		env.execute("Flink Batch Java API Skeleton");
+//		env.execute("Flink Batch Java API Skeleton");
 	}
 }
