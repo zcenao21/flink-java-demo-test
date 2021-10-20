@@ -21,6 +21,7 @@ package com.will;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -37,6 +38,9 @@ import java.util.regex.Pattern;
  * <p>To package your application into a JAR file for execution,
  * change the main class in the POM.xml file to this class (simply search for 'mainClass')
  * and run 'mvn clean package' on the command line.
+ *
+ * 使用了DataSet API，实例程序
+ *
  */
 public class BatchJob {
 
@@ -66,6 +70,13 @@ public class BatchJob {
 				public boolean filter(Tuple2<String, Integer> stringIntegerTuple2) throws Exception {
 					return pattern.matcher(stringIntegerTuple2.getField(0)).matches()
 							||stringIntegerTuple2.getField(0).toString().length()<1?false:true;
+				}
+			})
+			.first(3)
+			.reduce(new ReduceFunction<Tuple2<String, Integer>>() {
+				@Override
+				public Tuple2<String, Integer> reduce(Tuple2<String, Integer> si1, Tuple2<String, Integer> si2) throws Exception {
+					return new Tuple2<>(si1.getField(0)+si2.getField(0).toString(),(int)si1.getField(1)+(int)si2.getField(1));
 				}
 			})
 			.print();
