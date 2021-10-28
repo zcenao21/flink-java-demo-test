@@ -123,8 +123,11 @@ under the License.
 						</goals>
 						<configuration>
 							<artifactSet>
+								<includes>
+									<include>org.apache.flink:*</include>
+								</includes>
 								<excludes>
-									<exclude>org.apache.flink:force-shading</exclude>
+<!--									<exclude>org.apache.flink:force-shading</exclude>-->
 									<exclude>com.google.code.findbugs:jsr305</exclude>
 									<exclude>org.slf4j:*</exclude>
 									<exclude>log4j:*</exclude>
@@ -219,12 +222,12 @@ under the License.
 					<version>${flink.version}</version>
 					<scope>provided</scope>
 				</dependency>
-				<dependency>
-					<groupId>org.apache.flink</groupId>
-					<artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
-					<version>${flink.version}</version>
-					<scope>provided</scope>
-				</dependency>
+<!--				<dependency>-->
+<!--					<groupId>org.apache.flink</groupId>-->
+<!--					<artifactId>flink-streaming-java_${scala.binary.version}</artifactId>-->
+<!--					<version>${flink.version}</version>-->
+<!--					<scope>provided</scope>-->
+<!--				</dependency>-->
 			</dependencies>
 		</profile>
 	</profiles>

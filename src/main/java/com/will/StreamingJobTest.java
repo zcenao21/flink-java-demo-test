@@ -18,10 +18,12 @@
 
 package com.will;
 
-import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.util.Collector;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -35,7 +37,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
  * <p>If you change the name of the main class (with the public static void main(String[] args))
  * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
  */
-public class StreamingJob {
+public class StreamingJobTest {
 
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
@@ -44,21 +46,25 @@ public class StreamingJob {
 		DataStream<String> source = env.readTextFile("/home/will/tmpdir/number.csv")
 				.name("Word Count Reading From File");
 
-		DataStream<Tuple2<String,Integer>> proc = source.flatMap(new TextTokenizer())
-				.keyBy(0)
-				.sum(1)
-				
-				.filter(new FilterFunction<Tuple2<String, Integer>>() {
+		DataStream<Tuple2<String,Integer>> proc = source
+				.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
 					@Override
-					public boolean filter(Tuple2<String, Integer> stringIntegerTuple2) throws Exception {
-						return stringIntegerTuple2.getField(0).toString().equals("cool")?false:true;
+					public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
+						String[] ss = s.split("[,:\\s+()]");
+						for(String in: ss){
+							collector.collect(new Tuple2<>(in,1));
+						}
 					}
 				})
-				.name("Process-Word-Count");
+				.keyBy(0)
+				.reduce(new ReduceFunction<Tuple2<String, Integer>>() {
+					@Override
+					public Tuple2<String, Integer> reduce(Tuple2<String, Integer> si1, Tuple2<String, Integer> si2) throws Exception {
+						return new Tuple2<>(si1.getField(0)+si2.getField(0).toString(),(int)si1.getField(1)+(int)si2.getField(1));
+					}
+				});
 
-		proc.addSink(new WordCountSink())
-				.name("Word-Count-Sink");
-
+		proc.print();
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}

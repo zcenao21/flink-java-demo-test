@@ -18,47 +18,46 @@
 
 package com.will;
 
-import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.util.Collector;
 
 /**
- * Skeleton for a Flink Streaming Job.
- *
- * <p>For a tutorial how to write a Flink streaming application, check the
- * tutorials and examples on the <a href="http://flink.apache.org/docs/stable/">Flink Website</a>.
- *
- * <p>To package your application into a JAR file for execution, run
- * 'mvn clean package' on the command line.
- *
- * <p>If you change the name of the main class (with the public static void main(String[] args))
- * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
+ * 使用方法：
+ * 1.nc -lk 9999  开启连接
+ * 2.运行程序
+ * 3.观察程序输出
  */
-public class StreamingJob {
+public class StreamingJobSocket {
 
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-		DataStream<String> source = env.readTextFile("/home/will/tmpdir/number.csv")
-				.name("Word Count Reading From File");
+		DataStream<String> source = env
+				.socketTextStream("localhost",9999);
 
-		DataStream<Tuple2<String,Integer>> proc = source.flatMap(new TextTokenizer())
-				.keyBy(0)
-				.sum(1)
-				
-				.filter(new FilterFunction<Tuple2<String, Integer>>() {
+		DataStream<Tuple2<String,Integer>> proc = source
+				.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
 					@Override
-					public boolean filter(Tuple2<String, Integer> stringIntegerTuple2) throws Exception {
-						return stringIntegerTuple2.getField(0).toString().equals("cool")?false:true;
+					public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
+						String[] ss = s.split("[,:\\s+()]");
+						for(String in: ss){
+							collector.collect(new Tuple2<>(in,1));
+						}
 					}
 				})
-				.name("Process-Word-Count");
+				.keyBy(0)
+				.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+				.sum(1);
 
-		proc.addSink(new WordCountSink())
-				.name("Word-Count-Sink");
-
+		proc.print();
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}
