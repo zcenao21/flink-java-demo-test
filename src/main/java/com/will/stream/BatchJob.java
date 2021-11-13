@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.will;
+package com.will.stream;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;

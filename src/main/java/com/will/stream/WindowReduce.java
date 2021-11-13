@@ -16,16 +16,17 @@
  * limitations under the License.
  */
 
-package com.will;
+package com.will.stream;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 /**
@@ -34,7 +35,7 @@ import org.apache.flink.util.Collector;
  * 2.运行程序
  * 3.观察程序输出
  */
-public class StreamingJobSocket {
+public class WindowReduce {
 
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
@@ -43,7 +44,7 @@ public class StreamingJobSocket {
 		DataStream<String> source = env
 				.socketTextStream("localhost",9999);
 
-		DataStream<Tuple2<String,Integer>> proc = source
+		source
 				.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
 					@Override
 					public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
@@ -53,11 +54,15 @@ public class StreamingJobSocket {
 						}
 					}
 				})
-				.keyBy(0)
-				.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
-				.sum(1);
+			.keyBy(0)
+			.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+			.reduce(new ReduceFunction<Tuple2<String, Integer>>() {
+				@Override
+				public Tuple2<String, Integer> reduce(Tuple2<String, Integer> st1, Tuple2<String, Integer> st2) throws Exception {
+					return new Tuple2<String,Integer>(st1.f0,st1.f1+st2.f1);
+				}
+			}).print();
 
-		proc.print();
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}
