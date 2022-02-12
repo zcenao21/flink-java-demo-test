@@ -20,18 +20,12 @@ package com.will.stream;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
-import org.apache.flink.api.common.functions.ReduceFunction;
-import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.JoinedStreams;
-import org.apache.flink.streaming.api.datastream.WindowedStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 /**
@@ -63,10 +57,8 @@ public class WindowJoin {
 					}
 				})
 			.keyBy(0)
-			.windowAll(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+				.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
 			.sum(1);
-
-		result1.print();
 
 		DataStream<Tuple2<String,Integer>> result2 = source2
 				.flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
@@ -79,14 +71,12 @@ public class WindowJoin {
 					}
 				})
 				.keyBy(0)
-				.windowAll(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+				.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
 				.sum(1);
-
-		result2.print();
 
 		result1.join(result2)
 				.where(v->v.f0).equalTo(v->v.f0)
-				.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+				.window(SlidingProcessingTimeWindows.of(Time.seconds(20),Time.seconds(5)))
 				.apply(new JoinFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, Tuple2<String, Integer>>() {
 						   @Override
 						   public Tuple2<String, Integer> join(Tuple2<String, Integer> st1, Tuple2<String, Integer> st2) throws Exception {
@@ -97,6 +87,6 @@ public class WindowJoin {
 				.print();
 
 		// execute program
-		env.execute("Flink Streaming Java API Skeleton");
+		env.execute("Flink Streaming Java API Skebleton");
 	}
 }
