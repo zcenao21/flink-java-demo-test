@@ -3,6 +3,8 @@ package com.will.table;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
@@ -13,7 +15,9 @@ import org.apache.flink.util.Collector;
 
 public class WordCountSQL {
     public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        Configuration configuration = new Configuration();
+        configuration.setInteger(RestOptions.PORT, 8081);
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment(configuration);
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env);
 
         DataStream<String> source = env
@@ -29,7 +33,7 @@ public class WordCountSQL {
                     }
                 })
                 .keyBy(0)
-                .window(SlidingProcessingTimeWindows.of(Time.seconds(10),Time.seconds(1)))
+                .window(SlidingProcessingTimeWindows.of(Time.seconds(3),Time.seconds(1)))
                 .sum(1)
                 .map(new MapFunction<Tuple2<String, Integer>, WC>() {
                     @Override
