@@ -42,7 +42,7 @@ public class WordCountSQL {
                     }
                 });
 
-        tEnv.registerDataStream("WordCount", input, "word, frequency,timein");
+        tEnv.registerDataStream("WordCount", input);
         Table table = tEnv.sqlQuery("SELECT word,frequency,timein frequency FROM WordCount where CHAR_LENGTH(word)>1");
         DataStream<WC> result = tEnv.toDataStream(table, WC.class);
         result.print();

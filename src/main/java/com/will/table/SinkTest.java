@@ -44,7 +44,7 @@ public class SinkTest {
                     }
                 });
 
-        tEnv.registerDataStream("WordCount", input, "word, frequency,timein");
+        tEnv.registerDataStream("WordCount", input);
         Table table = tEnv.sqlQuery("SELECT word,frequency,timein frequency FROM WordCount where CHAR_LENGTH(word)>1");
         DataStream<String> result = tEnv.toDataStream(table, WC.class).map(new MapFunction<WC, String>() {
             @Override
