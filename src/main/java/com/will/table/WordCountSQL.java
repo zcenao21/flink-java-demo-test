@@ -26,7 +26,7 @@ public class WordCountSQL {
                 .flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
                     @Override
                     public void flatMap(String s, Collector<Tuple2<String, Integer>> collector) throws Exception {
-                        String[] ss = s.split("[,:\\s+()]");
+                        String[] ss = s.split(/**/"[,:\\s+()]");
                         for(String in: ss){
                             collector.collect(new Tuple2<>(in,1));
                         }
