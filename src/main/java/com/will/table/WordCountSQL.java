@@ -33,7 +33,7 @@ public class WordCountSQL {
                     }
                 })
                 .keyBy(0)
-                .window(SlidingProcessingTimeWindows.of(Time.seconds(3),Time.seconds(1)))
+//                .window(SlidingProcessingTimeWindows.of(Time.seconds(3),Time.seconds(1)))
                 .sum(1)
                 .map(new MapFunction<Tuple2<String, Integer>, WC>() {
                     @Override
@@ -43,9 +43,24 @@ public class WordCountSQL {
                 });
 
         tEnv.registerDataStream("WordCount", input);
-        Table table = tEnv.sqlQuery("SELECT word,frequency,timein frequency FROM WordCount where CHAR_LENGTH(word)>1");
-        DataStream<WC> result = tEnv.toDataStream(table, WC.class);
-        result.print();
+        tEnv
+            .executeSql("select\n" +
+                    "*\n" +
+                    "from \n" +
+                    "(\n" +
+                    "    SELECT\n" +
+                    "        word\n" +
+                    "        ,frequency\n" +
+                    "        ,timein\n" +
+                    "        ,row_number() over (partition by word order by timein desc) as r\n" +
+                    "    FROM WordCount\n" +
+                    "    where CHAR_LENGTH(word)>1\n" +
+                    ") a \n" +
+                    "where a.r<=1")
+            .print();
+//        Table table = tEnv.sqlQuery("SELECT word,frequency,timein frequency FROM WordCount where CHAR_LENGTH(word)>1");
+//        DataStream<WC> result = tEnv.toDataStream(table, WC.class);
+//        result.print();
 
         env.execute("Flink Streaming Java API Skeleton");
     }
